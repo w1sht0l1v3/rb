@@ -1,0 +1,6 @@
+config.yml
+.bundle
+coverage
+rdoc
+pkg
+*.gem
