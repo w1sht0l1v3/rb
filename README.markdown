@@ -1,4 +1,4 @@
-fd
+f
 GitBot is a Ruby IRC bot that provides a builtin GitHub webhook server. 
 
 Installation
