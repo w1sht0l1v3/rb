@@ -1,3 +1,3 @@
 irc bot that send commits to irc channels
 
-test6
+test7
