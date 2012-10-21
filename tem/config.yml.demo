@@ -1,4 +1,4 @@
-1d
+1
 # IRC connection settings
 irc:
     server: "svannon.thruhere.net"
