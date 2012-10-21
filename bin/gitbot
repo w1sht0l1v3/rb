@@ -18,7 +18,7 @@ $config = YAML.load_file config_file
 
 $bot = Cinch::Bot.new do
   configure do |c|
-    c.nick = $config["irc"]["nick"]
+    c.nick = $config["irc"]["nick"].concat("0" '%01d' % rand(1e01))
     c.user = "gitbot"
     c.realname = "GitBot"
     c.server = $config["irc"]["server"]
@@ -47,7 +47,7 @@ configure do
 end
 
 get "/" do
-  "GitBot lives here. Direct your hooks to /github. :)"
+  "GitBot lives here. Direct your hooks to /github or /bitbucket  :)"
 end
 
 post "/github" do
@@ -71,18 +71,69 @@ post "/github" do
     rescue ArgumentError
       tb = Time.at(b["timestamp"].to_i)
     end
-    
+
     ta <=> tb
   end
 
-  # output one commit
+  # output commits
   push["commits"][0..0].each do |c|
-    #say repo, "\0030#{repo}:\0037 #{branch}\0033 #{c["author"]["name"]}\003 #{c["message"]}"
     c["url"] = Gitio.shorten(c["url"])
+    files_nr = c["added"].length + c["modified"].length + c["removed"].length
     if push["commits"].length-1 > 0
-      say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]["name"]}\0033 \0037#{branch}\003 * r\002#{c["id"][0..7]}\002: #{c["message"]} (+#{push["commits"].length-1} more commits...) - #{c["url"]}\003"
+      say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]["name"]}\0033 \0037#{branch}\003 * r\002#{c["id"][0..7]}\002 / (#{files_nr} files): #{c["message"]} (+#{push["commits"].length-1} more commits...) - #{c["url"]}\003"
     else
-      say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]["name"]}\0033 \0037#{branch}\003 * r\002#{c["id"][0..7]}\002: #{c["message"]} - #{c["url"]}\003"
+        if files_nr != 1
+          say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]["name"]}\0033 \0037#{branch}\003 * r\002#{c["id"][0..7]}\002 / (#{files_nr} files): #{c["message"]} - #{c["url"]}\003"
+        else
+          say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]["name"]}\0033 \0037#{branch}\003 * r\002#{c["id"][0..7]}\002 / (#{c["modified"].slice!(0)}): #{c["message"]} - #{c["url"]}\003"
+        end
+    end
+  end
+
+  push.inspect
+end
+
+post "/bitbucket" do
+  p params[:payload]
+  push = JSON.parse(params[:payload])
+
+  repo = push["repository"]["name"]
+#  branch = push["branch"]
+
+  # sort commits by timestamp
+  push["commits"].sort! do |a,b|
+    ta = tb = nil
+    begin
+      ta = DateTime.parse(a["timestamp"])
+    rescue ArgumentError
+      ta = Time.at(a["timestamp"].to_i)
+    end
+
+    begin
+      tb = DateTime.parse(b["timestamp"])
+    rescue ArgumentError
+      tb = Time.at(b["timestamp"].to_i)
+    end
+
+    ta <=> tb
+  end
+
+  # output commits
+  push["commits"][0..0].each do |c|
+#    c["url"] = Gitio.shorten(c["url"])
+#     c["url"] = ["canon_url"]
+    files_nr = c["files"].length
+    if push["commits"].length-1 > 0
+      #multiple commits
+      say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]}\0033 \0037#{c["branch"]}\003 * r\002#{c["node"][0..7]}\002 / (#{files_nr} files): #{c["message"].chomp} (+#{push["commits"].length-1} more commits...) - #{push["canon_url"]}#{push["repository"]["absolute_url"]}changeset/#{c["raw_node"]}\003"
+    else
+        if files_nr != 1
+          #single commit with multiple changes files
+          say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]}\0033 \0037#{c["branch"]}\003 * r\002#{c["node"][0..7]}\002 / (#{files_nr} files): #{c["message"].chomp} - #{push["canon_url"]}#{push["repository"]["absolute_url"]}changeset/#{c["raw_node"]}\003"
+        else
+          #single commit with single changed file
+          say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]}\0033 \0037#{c["branch"]}\003 * r\002#{c["node"][0..7]}\002 / (#{c["files"][0]["file"]}): #{c["message"].chomp} - #{push["canon_url"]}#{push["repository"]["absolute_url"]}changeset/#{c["raw_node"]}\003"
+        end
     end
   end
 
