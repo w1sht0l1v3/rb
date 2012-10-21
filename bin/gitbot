@@ -80,7 +80,7 @@ post "/github" do
     if push["commits"].length-1 > 0
       say repo, "\0030#{repo}:\0037 #{c["author"]["name"]}\003 * #{branch}\0033: #{c["message"]} (+#{push["commits"].length-1} more commits...) - #{c["url"]}\003"
     else
-      say repo, "\0030#{repo}:\0037 #{c["author"]["name"]}\003 * #{branch}\0033 * #{c["id"]}: #{c["message"]} - #{c["url"]}\003"
+      say repo, "\002\0030#{repo}:\002\0037 \0033#{c["author"]["name"]}\0033 \0037#{branch}\003 * r\002#{c["id"][0..7]}\002: #{c["message"]} - #{c["url"]}\003"
     end
   end
 
