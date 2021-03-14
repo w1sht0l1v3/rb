@@ -11,7 +11,7 @@ GEM
   specs:
     cinch (1.0.2)
     json (2.2.0)
-    rack (1.6.11)
+    rack (1.6.13)
     sinatra (1.1.0)
       rack (~> 1.1)
       tilt (~> 1.1)
